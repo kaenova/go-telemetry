@@ -1,0 +1,28 @@
+version: '3.0'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.0.0
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+    volumes:
+      - ./temp/elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - "discovery.type=single-node"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana-oss:7.0.0
+    ports:
+      - '5601:5601'
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    volumes:
+      - ./temp/kibana:/usr/share/kibana/data
+    depends_on:
+      - elasticsearch
+
+networks:
+  default:
+    driver: bridge
+    
+
