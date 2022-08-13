@@ -1,28 +1,49 @@
 version: '3.0'
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.0.0
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
     ports:
       - '9200:9200'
       - '9300:9300'
-    volumes:
-      - ./temp/elasticsearch:/usr/share/elasticsearch/data
     environment:
       - "discovery.type=single-node"
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:7.0.0
+    image: docker.elastic.co/kibana/kibana-oss:7.10.2
     ports:
       - '5601:5601'
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
-    volumes:
-      - ./temp/kibana:/usr/share/kibana/data
     depends_on:
       - elasticsearch
+  
+  filebeat:
+    image: docker.elastic.co/beats/filebeat-oss:7.10.2
+    ports:
+      - "5602:5602"
+    environment:
+      - output.elasticsearch.hosts=["elasticsearch:9200"]
 
-networks:
-  default:
-    driver: bridge
-    
-
+  logstash:
+    image: docker.elastic.co/logstash/logstash-oss:7.10.2
+    ports:
+      - "5603:5603"
+      
+  apm-server:
+    image: docker.elastic.co/apm/apm-server-oss:7.10.2
+    ports:
+      - "8200:8200"
+    command: >
+       apm-server -e
+         -E apm-server.rum.enabled=true
+         -E setup.kibana.host=kibana:5601
+         -E setup.template.settings.index.number_of_replicas=0
+         -E apm-server.kibana.enabled=true
+         -E apm-server.kibana.host=kibana:5601
+         -E output.elasticsearch.hosts=["elasticsearch:9200"]
+      
+  fluent-bit:
+    image: cr.fluentbit.io/fluent/fluent-bit
+    ports:
+      - "9880:9880"
+    tty: true
